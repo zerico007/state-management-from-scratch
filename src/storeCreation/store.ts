@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 type Store<StoreType> = {
   value: StoreType;
@@ -11,7 +11,7 @@ export type Updater<StoreType> = (
 
 type StoreGetter = <StoreType>(store: Store<StoreType>) => StoreType;
 
-type ReadOnlyStoreType<StoreType> = (get: StoreGetter) => StoreType
+type ReadOnlyStoreType<StoreType> = (get: StoreGetter) => StoreType;
 
 function computeValue<State>(state: State, get: StoreGetter) {
   return state instanceof Function ? state(get) : state;
@@ -35,7 +35,7 @@ function createStore<StoreType>(
   const value = computeValue(state, get);
   const internalState: Store<StoreType> = {
     value,
-    subscribe: () => () => {}
+    subscribe: () => () => {},
   };
 
   const listeners = new Set<(state: StoreType) => void>();
@@ -111,11 +111,31 @@ function useStore<StoreType>(
   return [value, updateStore];
 }
 
+function useStoreSync<StoreType>(
+  store: Store<StoreType>
+): [StoreType, Updater<StoreType>] {
+  const state = useSyncExternalStore(
+    (effect) => store.subscribe(effect),
+    () => store.value
+  );
+
+  const updateStore: Updater<StoreType> = (newState) => {
+    if (!isWritableStore(store)) return;
+    if (newState instanceof Function) {
+      store.value = newState(store.value);
+      return;
+    }
+    store.value = newState;
+  };
+
+  return [state, updateStore];
+}
+
 function usePersistentStore<StoreType>(
   store: Store<StoreType>,
   key: string,
   storage: Storage = window.localStorage
-): [StoreType, Updater<StoreType>]{
+): [StoreType, Updater<StoreType>] {
   const [storeValue, setStoreValue] = useStore(store);
 
   useEffect(() => {
@@ -137,4 +157,4 @@ function usePersistentStore<StoreType>(
   return [storeValue, setStoreValue];
 }
 
-export { createStore, useStore, usePersistentStore };
+export { createStore, useStore, useStoreSync, usePersistentStore };

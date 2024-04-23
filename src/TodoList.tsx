@@ -1,11 +1,11 @@
 import type { FC, FormEvent } from "react";
 
 import { useState } from "react";
-import { useClassTodoStore } from "./store/todoStore";
+import { useClassTodoStoreSync } from "./store/todoStore";
 import Todo from "./Todo";
 
 const TodoList: FC = () => {
-  const [todoState, setTodos] = useClassTodoStore();
+  const [todoState, setTodos] = useClassTodoStoreSync();
   const [text, setText] = useState("");
 
   const handleComplete = (id: number) => {

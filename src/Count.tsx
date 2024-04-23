@@ -1,7 +1,7 @@
-import { useCountStore } from "./store/countStore";
+import { useFunctionCountStore } from "./store/countStore";
 
 export default function Count() {
-  const [count, setCount] = useCountStore();
+  const [count, setCount] = useFunctionCountStore();
 
   return (
     <>

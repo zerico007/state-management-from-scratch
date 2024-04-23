@@ -1,11 +1,11 @@
-import { useStore, createStore } from "./storeCreation";
-import { countStore } from "./store/countStore";
+import { useFunctionStoreSync, createFunctionStore } from "./storeCreation";
+import { functionCountStore } from "./store/countStore";
 
-const doubleCountStore = createStore((get) => get(countStore) * 2);
+const doubleCountStore = createFunctionStore((get) => get(functionCountStore) * 2);
 
 
 export default function NavBar() {
-  const [count] = useStore(doubleCountStore);
+  const [count] = useFunctionStoreSync(doubleCountStore);
 
   return (
     <nav>

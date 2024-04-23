@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
+
+import Collection from "./collection";
 
 type StateUpdate<State> = State | ((oldValue: State) => State);
 
@@ -9,7 +11,7 @@ type Getter = <State>(store: StateStore<State>) => State;
 type GetterState<State> = (get: Getter) => State;
 
 class StateStore<State> {
-  private listeners = new Set<(state: State) => void>();
+  private listeners = new Collection<(state: State) => void>();
   state;
 
   constructor(state: State | GetterState<State>) {
@@ -26,8 +28,8 @@ class StateStore<State> {
       if (newState === currentValue) {
         return;
       }
-      this.listeners.forEach((listener) => {
-        listener(this.read())
+      this.listeners.each((listener) => {
+        listener(this.read());
       });
       currentValue = newState;
     });
@@ -46,15 +48,15 @@ class StateStore<State> {
       newState = newState(this.read());
       this.state = newState;
     } else {
-    this.state = newState;
+      this.state = newState;
     }
-    this.listeners.forEach((listener) => listener(newState));
+    this.listeners.each((listener) => listener(newState));
   }
 
   subscribe(listener: (state: State) => void) {
     this.listeners.add(listener);
     return () => {
-      this.listeners.delete(listener);
+      this.listeners.remove(listener);
     };
   }
 }
@@ -82,4 +84,19 @@ function useClassStore<State>(
   return [state, write];
 }
 
-export { createClassStore, useClassStore };
+function useClassStoreSync<State>(
+  store: StateStore<State>
+): [State, StateUpdater<State>] {
+  const state = useSyncExternalStore(
+    (effect) => store.subscribe(effect),
+    () => store.read()
+  );
+
+  function write(newState: StateUpdate<State>) {
+    store.write(newState);
+  }
+
+  return [state, write];
+}
+
+export { createClassStore, useClassStore, useClassStoreSync };

@@ -1,5 +1,9 @@
+import { useSyncExternalStore } from "react";
+
+import Collection from "./collection";
+
 type Store<StoreType> = {
-  get: () => StoreType;
+  read: () => StoreType;
   subscribe: (listener: (state: StoreType) => void) => () => void;
   write: Updater<StoreType>;
 };
@@ -18,45 +22,45 @@ function computeValue<State>(state: State, get: Getter) {
 
 function createFunctionStore<StoreType>(
   state: StoreType | GetterStoreType<StoreType>
-) {
-  let value = computeValue(state, get);
-
-  const listeners = new Set<(state: StoreType) => void>();
+): Store<StoreType> {
+  const listeners = new Collection<(state: StoreType) => void>();
+  let internalState: StoreType | GetterStoreType<StoreType> = state;
 
   function get<Target>(store: Store<Target>): Target {
-    let currentValue = store.get();
+    let currentValue = store.read();
     store.subscribe((newState) => {
       if (newState === currentValue) {
         return;
       }
-      listeners.forEach((listener) => listener(computeValue(state, get)));
+      listeners.each((listener) => listener(read()));
       currentValue = newState;
     });
     return currentValue;
   }
 
   const read = () => {
-    return value;
+    return computeValue(internalState, get);
   };
 
   const subscribe = (listener: (state: StoreType) => void) => {
     listeners.add(listener);
     return () => {
-      listeners.delete(listener);
+      listeners.remove(listener);
     };
   };
 
   const write: Updater<StoreType> = (newState) => {
-    if (value instanceof Function) {
+    const currentValue = read();
+    if (state instanceof Function) {
       throw new Error("Cannot set value on computed state");
     }
     if (newState instanceof Function) {
-      newState = newState(value);
+      newState = newState(currentValue);
+      internalState = newState;
+    } else {
+      internalState = newState;
     }
-    value = newState;
-    for (const listener of listeners) {
-      listener(value);
-    }
+    listeners.each((listener) => listener(read()));
   };
 
   return {
@@ -66,4 +70,19 @@ function createFunctionStore<StoreType>(
   };
 }
 
-export { createFunctionStore };
+function useFunctionStoreSync<StoreType>(
+  store: Store<StoreType>
+): [StoreType, Updater<StoreType>] {
+  const state = useSyncExternalStore(
+    (effect) => store.subscribe(effect),
+    () => store.read()
+  );
+
+  const updateStore: Updater<StoreType> = (newState) => {
+    store.write(newState);
+  };
+
+  return [state, updateStore];
+}
+
+export { createFunctionStore, useFunctionStoreSync };

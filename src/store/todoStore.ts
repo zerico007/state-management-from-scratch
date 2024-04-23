@@ -1,4 +1,4 @@
-import { createStore, createClassStore, useStore, useClassStore } from "../storeCreation";
+import { createStore, createClassStore, useStore, useClassStore, useClassStoreSync } from "../storeCreation";
 
 export type Todo = {
   id: number;
@@ -20,4 +20,6 @@ const useTodoStore = () => useStore(todoStore);
 
 const useClassTodoStore = () => useClassStore(todoClassStore);
 
-export { useTodoStore, todoStore, useClassTodoStore, todoClassStore };
+const useClassTodoStoreSync = () => useClassStoreSync(todoClassStore);
+
+export { useTodoStore, todoStore, useClassTodoStore, todoClassStore, useClassTodoStoreSync };
