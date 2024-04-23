@@ -11,6 +11,9 @@ class Collection<Collectible> {
   }
 
   add(collectible: Collectible) {
+    if (["string", "number", "boolean"].includes(typeof collectible)) {
+      throw new Error("Use a Set for primitive types");
+    }
     const newId = new String(collectible).valueOf();
     const isAlreadyAdded = this.collectibles.some(
       (collectibleObject) => collectibleObject.id === newId
